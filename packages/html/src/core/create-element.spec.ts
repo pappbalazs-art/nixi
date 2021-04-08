@@ -10,7 +10,7 @@ describe('`createElement` function', () => {
 			expect(typeof element === 'function').to.be.true;
 		});
 
-		it('should return a function if we call the `addElementAttributesAndEvents` function as well', () => {
+		it('should return a function if we call the `addElementAttrsAndEvents` function as well', () => {
 			const element = createElement('div')();
 			expect(typeof element === 'function').to.be.true;
 		});

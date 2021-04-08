@@ -13,7 +13,7 @@ export const createElement = (tagName: string): Function => {
 	/*
 	 * Adding attributes or event listeners to the created element.
 	 */
-	const addElementAttributesAndEvents = (...attrs: ElementAttr[]): Function => {
+	const addElementAttrsAndEvents = (...attrs: ElementAttr[]): Function => {
 		// Check if there is any given attribute or event.
 		if (attrs.length) {
 			// If there is any, implement them.
@@ -27,8 +27,8 @@ export const createElement = (tagName: string): Function => {
 						// does not exists on Document Fragments.
 						//
 						// Also check if the attribute's value is whether a
-						// `string` or not. We need to do this, because the it
-						// could be a `function` as well.
+						// `string` or not. We need to do this, because it could
+						// be a `function` as well.
 						if (
 							parentElement instanceof HTMLElement
 							&& typeof attr.value === 'string'
@@ -44,7 +44,10 @@ export const createElement = (tagName: string): Function => {
 						// or not. We need to do this, because it could be a
 						// `string` as well.
 						if (typeof attr.value === 'function') {
-							parentElement.addEventListener(attr.name, attr.value);
+							parentElement.addEventListener(
+								attr.name,
+								attr.value
+							);
 						}
 						break;
 				}
@@ -55,9 +58,11 @@ export const createElement = (tagName: string): Function => {
 		 * Add child elements to the crated element if there is any.
 		 */
 		const addChildElements = (...children: Node[]): Node => {
-			// Append the child element to the parent.
-			for (const child of children) {
-				parentElement.appendChild(child);
+			// Append the child element to the parent if there is any.
+			if (children.length) {
+				for (const child of children) {
+					parentElement.appendChild(child);
+				}
 			}
 
 			return parentElement;
@@ -66,5 +71,5 @@ export const createElement = (tagName: string): Function => {
 		return addChildElements;
 	};
 
-	return addElementAttributesAndEvents;
+	return addElementAttrsAndEvents;
 };
