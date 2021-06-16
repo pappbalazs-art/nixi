@@ -6,5 +6,5 @@ export enum ElementAttrType {
 export type ElementAttr = {
 	type: ElementAttrType,
 	name: string,
-	value: (string | Event)
+	value: (string | (() => void))
 };

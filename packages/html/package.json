@@ -1,6 +1,6 @@
 {
   "name": "nixi-html",
-  "version": "0.2.1",
+  "version": "0.2.6",
   "description": "Nixi package for creating HTML elements.",
   "main": "dist/index.js",
   "files": [

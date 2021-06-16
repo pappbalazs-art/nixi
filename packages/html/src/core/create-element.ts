@@ -61,7 +61,13 @@ export const createElement = (tagName: string): Function => {
 			// Append the child element to the parent if there is any.
 			if (children.length) {
 				for (const child of children) {
-					parentElement.appendChild(child);
+					if (child instanceof Array) {
+						for (const childOfChild of child) {
+							parentElement.appendChild(childOfChild);
+						}
+					} else {
+						parentElement.appendChild(child);
+					}
 				}
 			}
 
