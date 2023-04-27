@@ -1,8 +1,0 @@
-# Do not include vim swap files
-*.swp
-
-# Do not include node modules
-node_modules/
-
-# Do not include compiled files
-dist/
