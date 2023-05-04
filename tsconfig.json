@@ -15,10 +15,9 @@
       "dom"
     ]
   },
-  "baseUrl": "./src",
+  "baseUrl": ".",
   "paths": {
-    "@core/*": ["core/*"],
-    "@platform/*": ["platform/*"]
+    "@helpers": ["src/helpers"]
   },
   "include": [
     "./src/**/*"

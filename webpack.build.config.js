@@ -1,5 +1,7 @@
 const path = require("path");
 
+const { alias } = require("./webpack.alias");
+
 const library = "Nixi";
 const coreFilename = library.toLowerCase();
 
@@ -11,10 +13,7 @@ const config = env => ({
 	resolve: {
 		modules: ["node_modules"],
 		extensions: [".js", ".ts"],
-		alias: {
-			core: path.resolve(__dirname, "./src/core"),
-			platform: path.resolve(__dirname, "./src/platform")
-		}
+		alias
 	},
 	entry: path.resolve(__dirname, "./src/index.ts"),
 	output: {

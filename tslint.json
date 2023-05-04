@@ -1,5 +1,8 @@
 {
   "extends": "tslint:recommended",
+  "jsRules": {
+    "object-literal-sort-keys": false
+  },
   "rules": {
     "interface-over-type-literal": false,
     "semicolon": false,
