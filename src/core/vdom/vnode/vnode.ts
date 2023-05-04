@@ -9,7 +9,6 @@ export type VirtualNode = {
 	attrs?: Record<string, string>;
 	text?: string;
 	children: Array<VirtualNode>;
-	props?: any;
 	route: Array<number>;
 };
 
@@ -22,7 +21,10 @@ export type ViewDefinition = {
 
 const EMPTY_NODE = "nixi:empty";
 
-function createVirtualNode(type: VirtualNodeType, config: Partial<VirtualNode> = {}) {
+function createVirtualNode(
+	type: VirtualNodeType,
+	config: Partial<VirtualNode> = {}
+) {
 	return {
 		isVirtualNode: true,
 		id: "",
@@ -31,10 +33,9 @@ function createVirtualNode(type: VirtualNodeType, config: Partial<VirtualNode> =
 		attrs: {},
 		text: "",
 		children: [],
-		props: {},
 		route: [],
 		...config,
-		type
+		type,
 	};
 }
 
@@ -45,14 +46,14 @@ function createVirtualTagNode(config: Partial<VirtualNode>): VirtualNode {
 function createVirtualTextNode(text: string): VirtualNode {
 	return createVirtualNode("TEXT", {
 		isVoid: true,
-		text
+		text,
 	});
 }
 
 function createVirtualCommentNode(text: string): VirtualNode {
 	return createVirtualNode("COMMENT", {
 		isVoid: true,
-		text
+		text,
 	});
 }
 
@@ -69,7 +70,7 @@ const View = (def: ViewDefinition) => {
 		name: as,
 		isVoid,
 		attrs: { ...rest },
-		children: isVoid ? [] : (children || [])
+		children: isVoid ? [] : children || [],
 	});
 };
 
@@ -80,5 +81,6 @@ export {
 	createVirtualEmptyNode,
 	Text,
 	Comment,
-	View
+	View,
+	EMPTY_NODE,
 };

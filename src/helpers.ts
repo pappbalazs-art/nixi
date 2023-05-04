@@ -56,7 +56,7 @@ function deepClone(obj: any) {
 }
 
 function flatten(arr: Array<any>): Array<any> {
-	const list = arr.reduce((acc, el) => {
+	const mapElement = (acc, el) => {
 		if (isArray(el)) {
 			acc.push(...(el as any));
 		} else {
@@ -64,7 +64,8 @@ function flatten(arr: Array<any>): Array<any> {
 		}
 
 		return acc;
-	}, []);
+	};
+	const list = arr.reduce(mapElement, []);
 
 	return list;
 }

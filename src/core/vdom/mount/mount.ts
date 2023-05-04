@@ -1,9 +1,9 @@
 import { flatten, isArray } from "@helpers";
-import { 
+import {
 	getIsStatelessComponentFactory,
-	StatelessComponentFactoryType
-} from "../component";
-import { createVirtualEmptyNode, VirtualNode } from "./vnode";
+	StatelessComponentFactoryType,
+} from "../../component";
+import { createVirtualEmptyNode, VirtualNode } from "../vnode";
 
 function mount(
 	element: VirtualNode | StatelessComponentFactoryType | null | undefined
