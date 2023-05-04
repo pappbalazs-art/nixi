@@ -1,4 +1,5 @@
 import { isFunction, isObject, sanitize } from "@helpers";
+import { VirtualNode } from "../vdom";
 
 type ComponentDefinition = (props) => any | {};
 
@@ -7,9 +8,9 @@ type ComponentOptions = {
 	defaultProps?: any;
 };
 
-type StatelessComponentFactoryType = {
+export type StatelessComponentFactoryType = {
 	displayName: string;
-	createElement: () => any;
+	createElement: () => VirtualNode | Array<VirtualNode> | null;
 	props: {
 		key?: any;
 	};
@@ -17,12 +18,17 @@ type StatelessComponentFactoryType = {
 
 const $$statelessComponentFactory = Symbol("statelessComponentFactory");
 
-function createComponent(def: ComponentDefinition, options: ComponentOptions = null) {
+function createComponent(
+	def: ComponentDefinition,
+	options: ComponentOptions = null
+) {
 	return (props = {}) => {
 		const isStateless = isFunction(def);
 		const displayName = options ? options.displayName : "";
 		const defaultProps = isStateless
-			? (options && options.defaultProps ? sanitize(options.defaultProps): {})
+			? options && options.defaultProps
+				? sanitize(options.defaultProps)
+				: {}
 			: {};
 		const computedProps = { ...defaultProps, ...sanitize(props) };
 
@@ -30,14 +36,12 @@ function createComponent(def: ComponentDefinition, options: ComponentOptions = n
 			[$$statelessComponentFactory]: true,
 			createElement: () => def({ ...computedProps }),
 			displayName,
-			props: computedProps
+			props: computedProps,
 		} as StatelessComponentFactoryType;
 	};
 }
 
-const isStatelessComponentFactory = f => f && isObject(f) && f[$$statelessComponentFactory] === true;
+const getIsStatelessComponentFactory = (f) =>
+	f && isObject(f) && f[$$statelessComponentFactory] === true;
 
-export {
-	createComponent,
-	isStatelessComponentFactory
-};
+export { createComponent, getIsStatelessComponentFactory };

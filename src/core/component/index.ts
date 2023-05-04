@@ -1,7 +1,1 @@
-import {
-	createComponent
-} from "./component";
-
-export {
-	createComponent
-};
+export * from "./component";

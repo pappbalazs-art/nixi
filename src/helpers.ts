@@ -1,11 +1,11 @@
-const isFunction = o => typeof o === "function";
-const isUndefined = o => typeof o === "undefined";
-const isNumber = o => typeof o === "number";
-const isObject = o => typeof o === "object";
-const isArray = o => Array.isArray(o);
-const isNull = o => o === null;
-const isEmpty = o => isNull(o) || isUndefined(o);
-const isDOMElement = e => e instanceof Element || e instanceof HTMLDocument;
+const isFunction = (o) => typeof o === "function";
+const isUndefined = (o) => typeof o === "undefined";
+const isNumber = (o) => typeof o === "number";
+const isObject = (o) => typeof o === "object";
+const isArray = Array.isArray;
+const isNull = (o) => o === null;
+const isEmpty = (o) => isNull(o) || isUndefined(o);
+const isDOMElement = (e) => e instanceof Element || e instanceof HTMLDocument;
 
 function escapeTags(str: string) {
 	const map = {};
@@ -17,7 +17,7 @@ function sanitize(o = {}) {
 	if (typeof o === "string") {
 		return escapeTags(o);
 	} else if (typeof o === "object" && o !== null) {
-		Object.keys(o).forEach(key => {
+		Object.keys(o).forEach((key) => {
 			if (typeof o[key] === "string") {
 				o[key] = escapeTags(o[key]);
 			} else if (typeof o[key] === "object") {
@@ -40,12 +40,15 @@ function deepClone(obj: any) {
 		? Array.isArray(obj)
 			? [...obj]
 			: Boolean(obj)
-				? { ...obj }
-				: obj
+			? { ...obj }
+			: obj
 		: isFunction
-			? function() { return obj.apply(this, arguments); }
-			: obj;
-	const clonePropsFn = (prop: string) => (copyObj[prop] = deepClone(copyObj[prop]));
+		? function () {
+				return obj.apply(this, arguments);
+		  }
+		: obj;
+	const clonePropsFn = (prop: string) =>
+		(copyObj[prop] = deepClone(copyObj[prop]));
 
 	Boolean(copyObj) && isObject && Object.keys(copyObj).forEach(clonePropsFn);
 
@@ -55,7 +58,7 @@ function deepClone(obj: any) {
 function flatten(arr: Array<any>): Array<any> {
 	const list = arr.reduce((acc, el) => {
 		if (isArray(el)) {
-			acc.push(...(el as any))
+			acc.push(...(el as any));
 		} else {
 			acc.push(el);
 		}
@@ -79,5 +82,5 @@ export {
 	sanitize,
 	error,
 	deepClone,
-	flatten
+	flatten,
 };
