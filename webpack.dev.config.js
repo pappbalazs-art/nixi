@@ -2,39 +2,39 @@ const path = require("path");
 
 const { alias } = require("./webpack.alias");
 
-const config = env => ({
+const config = (env) => ({
 	mode: "development",
 	resolve: {
 		modules: ["node_modules"],
-		extensions: [".js", ".ts"],
-		alias
+		extensions: [".js", ".ts", ".tsx"],
+		alias,
 	},
 	devtool: "source-map",
-	entry: path.resolve(__dirname, "./app/index.ts"),
+	entry: path.resolve(__dirname, "./app/index.tsx"),
 	output: {
 		path: path.resolve(__dirname, "./app"),
-		filename: "build.js"
+		filename: "build.js",
 	},
 	devServer: {
 		static: {
-			directory: path.join(__dirname, "./app")
+			directory: path.join(__dirname, "./app"),
 		},
 		compress: false,
-		port: 9000
+		port: 9000,
 	},
 	module: {
 		rules: [
 			{
-				test: /\.ts$/,
+				test: /\.(ts|tsx)$/,
 				loader: "ts-loader",
 				options: {
-					transpileOnly: true
+					transpileOnly: true,
 				},
-				exclude: /node_modules/
-			}
-		]
+				exclude: /node_modules/,
+			},
+		],
 	},
-	plugins: []
+	plugins: [],
 });
 
 module.exports = config;

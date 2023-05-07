@@ -1,1 +1,1 @@
-export { createComponent, Text, Comment, View } from "./core";
+export { createComponent, Text, Comment, View, h } from "./core";

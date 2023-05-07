@@ -227,10 +227,7 @@ function patchDOM(diff: VirtualDOMDiff[], rootElement: HTMLElement) {
 			Object.keys(diffElement.oldValue).forEach(mapAttrs);
 		} else if (diffElement.action === REPLACE_ATTRIBUTE) {
 			const mapAttrs = (attrName: string) => {
-				const value = getAttribute(
-					diffElement.nextValue as VirtualNode,
-					attrName
-				);
+				const value = diffElement.nextValue[attrName];
 
 				!isFunction(value) &&
 					!isUndefined(value) &&
@@ -262,8 +259,7 @@ function processDOM({
 }: ProcessDOMOptions) {
 	const uid = getAppUID();
 	const app = getRegistery().get(uid);
-	const getDOMElement = () =>
-		Boolean(container) ? container : (app.nativeElement as HTMLElement);
+	const getDOMElement = () => container || app.nativeElement;
 	const DOMElement = getDOMElement();
 	let diff = [];
 

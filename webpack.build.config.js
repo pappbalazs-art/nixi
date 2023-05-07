@@ -5,15 +5,15 @@ const { alias } = require("./webpack.alias");
 const library = "Nixi";
 const coreFilename = library.toLowerCase();
 
-const config = env => ({
+const config = (env) => ({
 	mode: "production",
 	optimization: {
-		minimize: !!env.production
+		minimize: !!env.production,
 	},
 	resolve: {
 		modules: ["node_modules"],
 		extensions: [".js", ".ts"],
-		alias
+		alias,
 	},
 	entry: path.resolve(__dirname, "./src/index.ts"),
 	output: {
@@ -23,7 +23,7 @@ const config = env => ({
 			: `${coreFilename}.imd.js`,
 		library: library,
 		libraryTarget: "umd",
-		umdNamedDefine: true
+		umdNamedDefine: true,
 	},
 	module: {
 		rules: [
@@ -31,13 +31,13 @@ const config = env => ({
 				test: /\.ts$/,
 				loader: "ts-loader",
 				options: {
-					transpileOnly: true
+					transpileOnly: true,
 				},
-				exclude: /node_modules/
-			}
-		]
+				exclude: /node_modules/,
+			},
+		],
 	},
-	plugins: []
+	plugins: [],
 });
 
 module.exports = config;
