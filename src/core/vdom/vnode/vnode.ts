@@ -21,7 +21,11 @@ export type VirtualDOM = VirtualNode | Array<VirtualNode>;
 
 export type ViewDefinition = {
 	as: string;
-	slot?: VirtualDOM | Array<StatelessComponentFactory> | Array<RenderProps>;
+	slot?:
+		| VirtualDOM
+		| StatelessComponentFactory
+		| Array<StatelessComponentFactory>
+		| Array<RenderProps>;
 	isVoid?: boolean;
 	[prop: string]: any;
 };
@@ -86,6 +90,10 @@ const View = (def: ViewDefinition) => {
 	});
 };
 
+function isVirtualNode(o: any): boolean {
+	return o && o.isVirtualNode === true;
+}
+
 function isTagVirtualNode(vNode: VirtualNode): boolean {
 	return vNode.type === "TAG";
 }
@@ -120,6 +128,7 @@ export {
 	Text,
 	Comment,
 	View,
+	isVirtualNode,
 	isTagVirtualNode,
 	createAttribute,
 	getAttribute,

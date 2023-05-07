@@ -1,16 +1,17 @@
 import { isFunction, isObject } from "@helpers";
-import { VirtualNode, VirtualDOM } from "../vdom";
+import { VirtualDOM, VirtualNode } from "../vdom";
 
 type ComponentDefinition<P> = (props: P) => any | {};
 
 type ComponentOptions<P> = {
 	displayName?: string;
 	defaultProps?: Partial<P>;
+	elementToken?: any;
 };
 
 export type StatelessComponentFactory = {
 	displayName: string;
-	createElement: () => VirtualNode | Array<VirtualNode> | null;
+	createElement: () => VirtualDOM | null;
 	props: {
 		key?: any;
 	};
@@ -19,9 +20,14 @@ export type StatelessComponentFactory = {
 export type RenderProps = (...args: any) => VirtualDOM;
 
 type StandardComponentProps = {
-	slot?: VirtualDOM | RenderProps;
+	slot?:
+		| VirtualDOM
+		| StatelessComponentFactory
+		| Array<StatelessComponentFactory>
+		| RenderProps;
 };
 
+const $$defaultFunctionalComponent = Symbol("defaultFunctionalComponent");
 const $$statelessComponentFactory = Symbol("statelessComponentFactory");
 
 function createComponent<P>(
@@ -41,6 +47,8 @@ function createComponent<P>(
 			createElement: () => def({ ...computedProps }),
 			displayName,
 			props: computedProps,
+			elementToken:
+				(options && options.elementToken) || $$defaultFunctionalComponent,
 		} as StatelessComponentFactory;
 	};
 }

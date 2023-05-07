@@ -6,9 +6,9 @@ import {
 	getVirtualDOM,
 	setAppUID,
 	setMountedRoute,
+	getMountedRoute,
 } from "@core/scope";
 import {
-	buildVirtualNodeWithRoutes,
 	createVirtualEmptyNode,
 	createVirtualNode,
 	mountVirtualDOM,
@@ -55,7 +55,7 @@ function renderComponent(
 		container.innerHTML = "";
 		registery.set(zoneId, app);
 
-		vNode = mountVirtualDOM(source, true) as VirtualNode;
+		vNode = mountVirtualDOM(source, getMountedRoute(), true) as VirtualNode;
 
 		app.vdom = vNode;
 
@@ -73,7 +73,7 @@ function renderComponent(
 		const vNode = getVirtualDOM(zoneId);
 		let nextVNode: VirtualNode = null;
 
-		nextVNode = mountVirtualDOM(source, true) as VirtualNode;
+		nextVNode = mountVirtualDOM(source, getMountedRoute(), true) as VirtualNode;
 
 		console.log("nextVNode: ", nextVNode);
 
