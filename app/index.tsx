@@ -1,48 +1,55 @@
-import { createComponent, h, Text, View } from "../src/core";
+import { createComponent, Fragment, h, Text, View } from "../src/core";
 import { renderComponent } from "../src/platform/browser";
+
+const domElement = document.getElementById("nixi-app");
+//const domElement2 = document.getElementById("nixi-app2");
+//const domElement2 = document.getElementById("nixi-app3");
 
 const div = (props = {}) => View({ ...props, as: "div" });
 const button = (props = {}) => View({ ...props, as: "button" });
 const input = (props = {}) => View({ ...props, as: "input", isVoid: true });
 
-const list = [...Array(10).fill(0)];
+type ContainerProp = {
+	value: string;
+};
 
-const Component = createComponent(({ text }) => {
-	return div({
-		children: [
-			button({
-				onClick: () => {
-					list.pop();
-
-					console.log("text: ", text);
-
-					renderComponent(
-						App({ isOpen: true, count: text, list }),
-						document.getElementById("nixi-app")
-					);
-				},
-				children: [Text(text)],
-			}),
-		],
-	});
+const Container = createComponent<ContainerProp>(({ slot, value }) => {
+	return (
+		<div style="color: green">
+			{typeof slot === "function" && slot("render props patterm")}
+			value: {value}
+		</div>
+	);
 });
 
-const Portal = createComponent(({ value = "" }) => {
-	return [Text(`portal: ${value}`)];
+type ButtonProps = {
+	fullWidth?: boolean;
+	onClick: (e) => void;
+};
+
+const Button = createComponent<ButtonProps>(({ slot, fullWidth, onClick }) => {
+	return (
+		<button
+			data-test="test"
+			style={`width: ${fullWidth ? "100%" : "auto"}`}
+			onClick={onClick}
+		>
+			{slot}
+		</button>
+	);
 });
 
-const domElement = document.getElementById("nixi-app");
-const domElement2 = document.getElementById("nixi-app2");
+type AppProps = {
+	isOpen?: boolean;
+	value: string;
+};
 
-const Container = createComponent(({ children }) => {
-	return <div style="color: red">{children}</div>;
-});
-
-const App = createComponent(({ value = "" }) => {
+const App = createComponent<AppProps>(({ value }) => {
+	const isOpen = value === "open";
 	const renderInput = () => {
 		return (
 			<input
-				value={value}
+				value={value || ""}
 				onInput={(e) =>
 					renderComponent(App({ value: e.target.value }), domElement)
 				}
@@ -50,14 +57,17 @@ const App = createComponent(({ value = "" }) => {
 		);
 	};
 
-	renderComponent(Portal({ value }), domElement2);
-
 	return (
 		<div>
+			{isOpen && (
+				<Fragment>
+					<div>1</div>
+					<div>2</div>
+					<div>3</div>
+				</Fragment>
+			)}
 			{renderInput()}
-			<br />
-			value: {value}
-			<Container>{value === "red" && <Container>zzzz</Container>}</Container>
+			<Container value={value}>{(v) => <div>{v}</div>}</Container>
 		</div>
 	);
 });

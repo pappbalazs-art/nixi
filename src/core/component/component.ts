@@ -1,11 +1,11 @@
-import { isFunction, isObject, sanitize } from "@helpers";
-import { VirtualNode } from "../vdom";
+import { isFunction, isObject } from "@helpers";
+import { VirtualNode, VirtualDOM } from "../vdom";
 
-type ComponentDefinition = (props) => any | {};
+type ComponentDefinition<P> = (props: P) => any | {};
 
-type ComponentOptions = {
+type ComponentOptions<P> = {
 	displayName?: string;
-	defaultProps?: any;
+	defaultProps?: Partial<P>;
 };
 
 export type StatelessComponentFactory = {
@@ -16,21 +16,25 @@ export type StatelessComponentFactory = {
 	};
 };
 
+type RenderProps = (...args: any) => VirtualDOM;
+
+type StandardComponentProps = {
+	slot?: VirtualDOM | RenderProps;
+};
+
 const $$statelessComponentFactory = Symbol("statelessComponentFactory");
 
-function createComponent(
-	def: ComponentDefinition,
-	options: ComponentOptions = null
+function createComponent<P>(
+	def: ComponentDefinition<P & StandardComponentProps>,
+	options: ComponentOptions<P & StandardComponentProps> = null
 ) {
 	return (props = {}) => {
 		const isStateless = isFunction(def);
 		const displayName = options ? options.displayName : "";
 		const defaultProps = isStateless
-			? options && options.defaultProps
-				? sanitize(options.defaultProps)
-				: {}
+			? (options && options.defaultProps) || {}
 			: {};
-		const computedProps = { ...defaultProps, ...sanitize(props) };
+		const computedProps = { ...defaultProps, ...props } as P;
 
 		return {
 			[$$statelessComponentFactory]: true,

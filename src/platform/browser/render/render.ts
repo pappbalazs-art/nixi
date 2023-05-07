@@ -86,6 +86,8 @@ function renderComponent(
 
 		app.queue.forEach((fn) => fn());
 		app.queue = [];
+
+		typeof onRender === "function" && onRender();
 	} else {
 		const vNode = getVirtualDOM(zoneId);
 		let nextVNode: VirtualNode | Array<VirtualNode> = null;
@@ -97,6 +99,8 @@ function renderComponent(
 		console.log("nextVNode: ", nextVNode);
 
 		processDOM({ vNode, nextVNode });
+
+		typeof onRender === "function" && onRender();
 	}
 
 	if (!isInternalRenderCall) {

@@ -1,3 +1,3 @@
 export * from "./component";
-export * from "./scope";
 export * from "./vdom";
+export * from "./fragment";

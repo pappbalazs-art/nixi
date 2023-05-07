@@ -11,7 +11,7 @@ test("[mount vdom]: mount children correctly", () => {
 
 	const App = createComponent(() => {
 		return div({
-			children: [
+			slot: [
 				Text("hello"),
 				...Array(4)
 					.fill(0)
@@ -40,7 +40,7 @@ describe("[mount vdom]: mount children correctly with arrays", () => {
 
 	const App = createComponent(() => {
 		return div({
-			children: [ListOne(), ListOne()],
+			slot: [ListOne(), ListOne()],
 		});
 	});
 
@@ -65,4 +65,22 @@ test("[mount vdom]: mount empty result", () => {
 	const vdom = mountVirtualDOM(App()) as VirtualNode;
 
 	expect(vdom.text).toBe(EMPTY_NODE);
+});
+
+test("[mount vdom]: mount component from component", () => {
+	const Component = createComponent(({ slot }) => {
+		return div({
+			slot,
+		});
+	});
+
+	const App = createComponent(() => {
+		return Component({
+			slot: Component(),
+		});
+	});
+
+	const vdom = mountVirtualDOM(App()) as VirtualNode;
+
+	expect(vdom.children.length).toBe(1);
 });
