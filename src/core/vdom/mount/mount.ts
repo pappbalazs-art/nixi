@@ -1,11 +1,38 @@
-import { flatten, isArray } from "@helpers";
+import { flatten, isArray, isNull } from "@helpers";
 import {
 	getIsStatelessComponentFactory,
 	StatelessComponentFactory,
 } from "../../component";
-import { createVirtualEmptyNode, VirtualNode } from "../vnode";
+import {
+	createVirtualEmptyNode,
+	createVirtualNode,
+	VirtualDOM,
+	VirtualNode,
+} from "../vnode";
 
-type VirtualDOM = VirtualNode | Array<VirtualNode>;
+function wrapWithRoot(
+	sourceVNode:
+		| VirtualNode
+		| Array<VirtualNode>
+		| StatelessComponentFactory
+		| null
+		| undefined
+): VirtualNode {
+	let vNode = null;
+
+	if (isNull(sourceVNode)) {
+		sourceVNode = createVirtualEmptyNode();
+	}
+
+	const mountedVDOM = mountVirtualDOM(sourceVNode);
+
+	vNode = createVirtualNode("TAG", {
+		name: "root",
+		children: isArray(mountedVDOM) ? mountedVDOM : [mountedVDOM],
+	});
+
+	return vNode;
+}
 
 function flatVirtualDOM(
 	vNode: VirtualDOM,
@@ -27,30 +54,26 @@ function flatVirtualDOM(
 }
 
 function mountVirtualDOM(
-	element: VirtualNode | StatelessComponentFactory | null | undefined
+	element:
+		| VirtualNode
+		| Array<VirtualNode>
+		| StatelessComponentFactory
+		| null
+		| undefined,
+	fromRoot: boolean = false
 ): VirtualDOM {
 	const isStatelessComponentFactory = getIsStatelessComponentFactory(element);
 	const statelessFactory = element as StatelessComponentFactory;
 	let vNode = null;
 
-	if (isStatelessComponentFactory) {
+	if (fromRoot) {
+		vNode = wrapWithRoot(element);
+	} else if (isStatelessComponentFactory) {
 		vNode = statelessFactory.createElement();
-		vNode = flatVirtualDOM(vNode, mountVirtualDOM);
-
-		if (isArray(vNode)) {
-			vNode = flatten(vNode.map(mountVirtualDOM));
-		} else if (Boolean(vNode)) {
-			vNode.children = flatten(vNode.children.map(mountVirtualDOM));
-		}
+		vNode = flatVirtualDOM(vNode, (el) => mountVirtualDOM(el));
 	} else if (Boolean(element)) {
 		vNode = element;
-		vNode = flatVirtualDOM(vNode, mountVirtualDOM);
-
-		if (isArray(vNode)) {
-			vNode = flatten(vNode.map(mountVirtualDOM));
-		} else if (Boolean(vNode)) {
-			vNode.children = flatten(vNode.children.map(mountVirtualDOM));
-		}
+		vNode = flatVirtualDOM(vNode, (el) => mountVirtualDOM(el));
 	}
 
 	if (!vNode) {
