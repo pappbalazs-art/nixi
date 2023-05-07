@@ -1,6 +1,6 @@
 import { createComponent } from "@core/component";
 import { Text, View, VirtualNode, EMPTY_NODE } from "../vnode";
-import { mount } from "./mount";
+import { mountVirtualDOM } from "./mount";
 
 const div = (props = {}) => View({ ...props, as: "div" });
 
@@ -20,7 +20,7 @@ test("[mount vdom]: mount children correctly", () => {
 		});
 	});
 
-	const vdom = mount(App()) as VirtualNode;
+	const vdom = mountVirtualDOM(App()) as VirtualNode;
 
 	expect(vdom.children.length).toBe(5);
 });
@@ -44,7 +44,7 @@ describe("[mount vdom]: mount children correctly with arrays", () => {
 		});
 	});
 
-	const vdom = mount(App()) as VirtualNode;
+	const vdom = mountVirtualDOM(App()) as VirtualNode;
 
 	test("right numbers of children", () => {
 		expect(vdom.children.length).toBe(12);
@@ -62,7 +62,7 @@ test("[mount vdom]: mount empty result", () => {
 		return null;
 	});
 
-	const vdom = mount(App()) as VirtualNode;
+	const vdom = mountVirtualDOM(App()) as VirtualNode;
 
 	expect(vdom.text).toBe(EMPTY_NODE);
 });

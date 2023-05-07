@@ -8,7 +8,7 @@ type ComponentOptions = {
 	defaultProps?: any;
 };
 
-export type StatelessComponentFactoryType = {
+export type StatelessComponentFactory = {
 	displayName: string;
 	createElement: () => VirtualNode | Array<VirtualNode> | null;
 	props: {
@@ -37,7 +37,7 @@ function createComponent(
 			createElement: () => def({ ...computedProps }),
 			displayName,
 			props: computedProps,
-		} as StatelessComponentFactoryType;
+		} as StatelessComponentFactory;
 	};
 }
 
