@@ -9,8 +9,7 @@ type ScopeType = {
 type AppType = {
 	nativeElement: HTMLElement;
 	vdom: VirtualNode;
-	eventHandlersCache: Array<(e) => void>;
-	eventHandlers: WeakMap<any, { addEvent?: Function; removeEvent?: Function }>;
+	eventHandlers: Map<string, Array<Function>>;
 	refs: Array<Function>;
 	queue: Array<Function>;
 };
@@ -40,8 +39,7 @@ function createApp(nativeElement: HTMLElement | null): AppType {
 	return {
 		nativeElement,
 		vdom: null,
-		eventHandlersCache: [],
-		eventHandlers: new WeakMap(),
+		eventHandlers: new Map(),
 		refs: [],
 		queue: [],
 	};

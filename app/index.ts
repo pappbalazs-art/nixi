@@ -5,15 +5,19 @@ import { renderComponent } from "../src/platform/browser";
 const div = (props = {}) => View({ ...props, as: "div" });
 const button = (props = {}) => View({ ...props, as: "button" });
 
+const list = [...Array(10).fill(0)];
+
 const Component = createComponent(({ text }) => {
 	return div({
 		children: [
 			button({
 				onClick: () => {
-					console.log(text);
+					list.pop();
+
+					console.log("text: ", text);
 
 					renderComponent(
-						App({ isOpen: true, count: text }),
+						App({ isOpen: true, count: text, list }),
 						document.getElementById("nixi-app")
 					);
 				},
@@ -23,14 +27,28 @@ const Component = createComponent(({ text }) => {
 	});
 });
 
-const App = createComponent(({ isOpen, count = 0 }) => {
-	const renderList = () => [
-		...Array(1000)
-			.fill(0)
-			.map((_, idx) => Component({ text: idx })),
-	];
+const App = createComponent(({ isOpen, list, count = 0 }) => {
+	const renderList = () => [...list.map((_, idx) => Component({ text: idx }))];
 
-	return [Text(`current: ${count}`), renderList()];
+	return [
+		Text(`current: ${count}`),
+		button({
+			style: "color: red",
+			onClick: () => {
+				console.log("click");
+
+				renderComponent(
+					App({ isOpen: true, count: "text", list }),
+					document.getElementById("nixi-app")
+				);
+			},
+			children: [Text["click me"]],
+		}),
+		renderList(),
+	];
 });
 
-renderComponent(App({ isOpen: true }), document.getElementById("nixi-app"));
+renderComponent(
+	App({ isOpen: true, list }),
+	document.getElementById("nixi-app")
+);

@@ -13,7 +13,7 @@ import {
 } from "@core/vdom";
 import { isArray, isFunction, isUndefined } from "@helpers";
 import { getAppUID, getRegistery } from "@core/scope";
-import { makeEvents } from "../events/events";
+import { delegateEvent } from "../events/events";
 
 type ProcessDOMOptions = {
 	vNode: VirtualNode;
@@ -23,9 +23,12 @@ type ProcessDOMOptions = {
 
 function mountDOM(
 	vdom: VirtualNode | VirtualNode[],
+	rootNode: HTMLElement,
 	parentNode: HTMLElement = null
 ): HTMLElement | Text | Comment {
 	let container: HTMLElement | Text | Comment | null = parentNode || null;
+	const uid = getAppUID();
+	const app = getRegistery().get(uid);
 	const mapVDOM = (vNode: VirtualNode) => {
 		if (!vNode) {
 			return;
@@ -36,21 +39,39 @@ function mountDOM(
 
 		if (vNode.type === "TAG") {
 			const DOMElement = document.createElement(vNode.name);
-			const mappAttrs = (attrName: string) =>
+			const mapAttrs = (attrName: string) => {
 				!isFunction(getAttribute(vNode, attrName)) &&
-				DOMElement.setAttribute(attrName, vNode.attrs[attrName]);
+					DOMElement.setAttribute(attrName, vNode.attrs[attrName]);
 
-			Object.keys(vNode.attrs).forEach(mappAttrs);
+				if (/^on/.test(attrName)) {
+					const eventName = attrName.slice(2, attrName.length).toLowerCase();
+					const handler = getAttribute(vNode, attrName);
+
+					app.queue.push(() =>
+						delegateEvent(uid, rootNode, DOMElement, eventName, handler)
+					);
+				}
+			};
+
+			Object.keys(vNode.attrs).forEach(mapAttrs);
 
 			if (isContainerExists) {
 				container.appendChild(DOMElement);
 
 				if (!vNode.isVoid) {
-					const node = mountDOM(vNode.children, DOMElement) as HTMLElement;
+					const node = mountDOM(
+						vNode.children,
+						rootNode,
+						DOMElement
+					) as HTMLElement;
 					container.appendChild(node);
 				}
 			} else {
-				const node = mountDOM(vNode.children, DOMElement) as HTMLElement;
+				const node = mountDOM(
+					vNode.children,
+					rootNode,
+					DOMElement
+				) as HTMLElement;
 				container = node;
 			}
 		} else if (vNode.type === "TEXT") {
@@ -176,17 +197,23 @@ function getDOMElementByRoute(
 	return node;
 }
 
-function patchDOM(diff: VirtualDOMDiff[], container: HTMLElement) {
+function patchDOM(diff: VirtualDOMDiff[], rootElement: HTMLElement) {
 	const mapDiff = (diffElement: VirtualDOMDiff) => {
-		const node = getNodeByDiffElememt(container, diffElement);
+		const node = getNodeByDiffElememt(rootElement, diffElement);
 
 		if (diffElement.action === ADD_NODE) {
-			const newNode = mountDOM(diffElement.nextValue as VirtualNode);
+			const newNode = mountDOM(
+				diffElement.nextValue as VirtualNode,
+				rootElement
+			);
 			node.appendChild(newNode);
 		} else if (diffElement.action === REMOVE_NODE) {
 			node.parentNode.removeChild(node);
 		} else if (diffElement.action === REPLACE_NODE) {
-			const newNode = mountDOM(diffElement.nextValue as VirtualNode);
+			const newNode = mountDOM(
+				diffElement.nextValue as VirtualNode,
+				rootElement
+			);
 			node.replaceWith(newNode);
 		} else if (diffElement.action === ADD_ATTRIBUTE) {
 			const attrValueBlackList = [];
@@ -240,7 +267,6 @@ function processDOM({
 	const DOMElement = getDOMElement();
 	let diff = [];
 
-	app.queue.push(() => makeEvents(nextVNode, uid));
 	diff = getVirtualDOMDiff(vNode, nextVNode);
 
 	patchDOM(diff, DOMElement);
@@ -248,6 +274,8 @@ function processDOM({
 	app.queue.forEach((fn) => fn());
 	app.queue = [];
 	app.vdom = nextVNode;
+
+	console.log("app.eventHandlers: ", app.eventHandlers);
 }
 
 export {
