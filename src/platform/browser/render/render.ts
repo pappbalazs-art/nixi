@@ -2,18 +2,11 @@ import { StatelessComponentFactory } from "@core/component";
 import {
 	createApp,
 	getAppUID,
+	setAppUID,
 	getRegistery,
 	getVirtualDOM,
-	setAppUID,
-	setMountedRoute,
-	getMountedRoute,
 } from "@core/scope";
-import {
-	createVirtualEmptyNode,
-	createVirtualNode,
-	mountVirtualDOM,
-	VirtualNode,
-} from "@core/vdom";
+import { mountVirtualDOM, VirtualNode } from "@core/vdom";
 import { isUndefined } from "@helpers";
 import { mountDOM, processDOM } from "../dom";
 
@@ -44,7 +37,6 @@ function renderComponent(
 
 	zoneId = zoneIdByRootNodeMap.get(container);
 
-	setMountedRoute([0]);
 	setAppUID(zoneId);
 
 	if (!isMounted) {
@@ -55,7 +47,7 @@ function renderComponent(
 		container.innerHTML = "";
 		registery.set(zoneId, app);
 
-		vNode = mountVirtualDOM(source, getMountedRoute(), true) as VirtualNode;
+		vNode = mountVirtualDOM({ element: source, fromRoot: true }) as VirtualNode;
 
 		app.vdom = vNode;
 
@@ -67,19 +59,18 @@ function renderComponent(
 
 		app.queue.forEach((fn) => fn());
 		app.queue = [];
-
-		typeof onRender === "function" && onRender();
 	} else {
 		const vNode = getVirtualDOM(zoneId);
 		let nextVNode: VirtualNode = null;
 
-		nextVNode = mountVirtualDOM(source, getMountedRoute(), true) as VirtualNode;
+		nextVNode = mountVirtualDOM({
+			element: source,
+			fromRoot: true,
+		}) as VirtualNode;
 
 		console.log("nextVNode: ", nextVNode);
 
 		processDOM({ vNode, nextVNode });
-
-		typeof onRender === "function" && onRender();
 	}
 
 	if (!isInternalRenderCall) {
@@ -89,6 +80,8 @@ function renderComponent(
 
 		setAppUID(prevZoneId);
 	}
+
+	typeof onRender === "function" && onRender();
 }
 
 export { renderComponent };

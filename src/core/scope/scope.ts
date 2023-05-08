@@ -3,7 +3,6 @@ import { VirtualNode } from "@core/vdom";
 type ScopeType = {
 	registery: Map<number, AppType>;
 	uid: number;
-	mountedRoute: Array<number>;
 };
 
 type AppType = {
@@ -20,9 +19,6 @@ const setRegistery = (registery: Map<number, any>) =>
 	(scope.registery = registery);
 const getAppUID = (): number => scope.uid;
 const setAppUID = (uid: number) => (scope.uid = uid);
-const getMountedRoute = (): Array<number> => [...scope.mountedRoute];
-const setMountedRoute = (route: Array<number>) =>
-	(scope.mountedRoute = [...route]);
 const getVirtualDOM = (uid: number): VirtualNode => ({
 	...getRegistery().get(uid).vdom,
 });
@@ -31,7 +27,6 @@ function createScope(): ScopeType {
 	return {
 		registery: new Map(),
 		uid: 0,
-		mountedRoute: [],
 	};
 }
 
@@ -52,8 +47,6 @@ export {
 	setRegistery,
 	getAppUID,
 	setAppUID,
-	getMountedRoute,
-	setMountedRoute,
 	getVirtualDOM,
 	createScope,
 	createApp,

@@ -16,60 +16,52 @@ type ContainerProp = {
 const Container = createComponent<ContainerProp>(({ slot, value }) => {
 	return (
 		<div style="color: green">
-			{typeof slot === "function" && slot("render props patterm")}
+			{typeof slot === "function" && slot("render props pattern")}
 			value: {value}
 		</div>
 	);
 });
 
-type ButtonProps = {
-	fullWidth?: boolean;
-	onClick: (e) => void;
-};
+const Item = createComponent(
+	() => {
+		return [Text("Item 666")];
+	},
+	{ displayName: "Item" }
+);
 
-const Button = createComponent<ButtonProps>(({ slot, fullWidth, onClick }) => {
-	return (
-		<button
-			data-test="test"
-			style={`width: ${fullWidth ? "100%" : "auto"}`}
-			onClick={onClick}
-		>
-			{slot}
-		</button>
-	);
-});
+const Component = createComponent(
+	() => {
+		return [
+			Item(),
+			div({
+				slot: Text("Component 1"),
+			}),
+		];
+	},
+	{ displayName: "Component" }
+);
 
 type AppProps = {
 	isOpen?: boolean;
 	value: string;
 };
 
-const App = createComponent<AppProps>(({ value }) => {
-	const isOpen = value === "open";
-	const renderInput = () => {
-		return (
-			<input
-				value={value || ""}
-				onInput={(e) =>
-					renderComponent(App({ value: e.target.value }), domElement)
-				}
-			/>
-		);
-	};
+const App = createComponent<AppProps>(
+	({ isOpen }) => {
+		return [
+			div({
+				slot: [
+					Text("text 1"),
+					Text("text 2"),
+					isOpen && [Component(), Component()],
+					Text("xxx"),
+					Text("zzz"),
+				],
+			}),
+			Text("xxx"),
+		];
+	},
+	{ displayName: "App" }
+);
 
-	return (
-		<div>
-			{isOpen && (
-				<Fragment>
-					<div>1</div>
-					<div>2</div>
-					<div>3</div>
-				</Fragment>
-			)}
-			{renderInput()}
-			<Container value={value}>{(v) => <div>{v}</div>}</Container>
-		</div>
-	);
-});
-
-renderComponent(App(), domElement);
+renderComponent(App({ isOpen: true }), domElement);
