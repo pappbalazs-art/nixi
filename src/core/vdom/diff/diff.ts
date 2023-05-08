@@ -1,6 +1,11 @@
 import { isEmpty, isFunction } from "@helpers";
 import { ATTR_KEY } from "@core/constants";
-import { createAttribute, getNodeKey, VirtualNode } from "../vnode";
+import {
+	createAttribute,
+	getNodeKey,
+	isTagVirtualNode,
+	VirtualNode,
+} from "../vnode";
 
 const ADD_NODE = "ADD_NODE";
 const REMOVE_NODE = "REMOVE_NODE";
@@ -17,7 +22,7 @@ export type VirtualDOMActions =
 	| "REMOVE_ATTRIBUTE"
 	| "REPLACE_ATTRIBUTE";
 
-export type VirtualDOMDiff = {
+export type Diff = {
 	action: VirtualDOMActions;
 	route: Array<number>;
 	oldValue: VirtualNode | Record<string, number | string | boolean>;
@@ -29,144 +34,152 @@ const createDiffAction = (
 	route: Array<number> = [],
 	oldValue: any,
 	nextValue: any
-): VirtualDOMDiff => ({
+): Diff => ({
 	action,
 	route,
 	oldValue,
 	nextValue,
 });
 
-function getVirtualDOMDiff(
-	VDOM: VirtualNode,
-	nextVDOM: VirtualNode,
-	prevDiff: Array<VirtualDOMDiff> = [],
-	prevRoute: Array<number> = [],
-	level: number = 0,
-	idx: number = 0
+function mapPrevAttributes(
+	attrName: string,
+	vNode: VirtualNode,
+	nextVNode: VirtualNode,
+	diff: Array<Diff>
 ) {
+	if (attrName === ATTR_KEY) {
+		return;
+	}
+
+	if (isEmpty(nextVNode.attrs[attrName])) {
+		diff.push(
+			createDiffAction(
+				REMOVE_ATTRIBUTE,
+				nextVNode.nodeRoute,
+				createAttribute(attrName, vNode.attrs[attrName]),
+				null
+			)
+		);
+	} else if (
+		nextVNode.attrs[attrName] !== vNode.attrs[attrName] &&
+		!isFunction(nextVNode.attrs[attrName])
+	) {
+		diff.push(
+			createDiffAction(
+				REPLACE_ATTRIBUTE,
+				nextVNode.nodeRoute,
+				createAttribute(attrName, vNode.attrs[attrName]),
+				createAttribute(attrName, nextVNode.attrs[attrName])
+			)
+		);
+	}
+}
+
+function mapNewAttributes(
+	attrName: string,
+	vNode: VirtualNode,
+	nextVNode: VirtualNode,
+	diff: Array<Diff>
+) {
+	if (attrName === ATTR_KEY) {
+		return;
+	}
+
+	if (
+		isEmpty(vNode.attrs[attrName]) &&
+		!isFunction(nextVNode.attrs[attrName])
+	) {
+		diff.push(
+			createDiffAction(
+				ADD_ATTRIBUTE,
+				nextVNode.nodeRoute,
+				null,
+				createAttribute(attrName, nextVNode.attrs[attrName])
+			)
+		);
+	}
+}
+
+function iterateNodes(
+	vNode: VirtualNode,
+	nextVNode: VirtualNode,
+	diff: Array<Diff>
+) {
+	const iterations = Math.max(vNode.children.length, nextVNode.children.length);
+	const diffCount = vNode.children.length - nextVNode.children.length;
+	let shift = 0;
+
+	for (let i = 0; i < iterations; i++) {
+		const childVNode = vNode.children[i];
+		const childNextVNode = nextVNode.children[i - shift];
+		const key = getNodeKey(childVNode);
+		const nextKey = getNodeKey(childNextVNode);
+		const isRemovingNodeByKey =
+			shift < diffCount &&
+			!isEmpty(key) &&
+			!isEmpty(nextKey) &&
+			key !== nextKey;
+
+		diff = getDiff(childVNode, childNextVNode, diff, isRemovingNodeByKey);
+
+		if (isRemovingNodeByKey) {
+			shift++;
+		}
+	}
+
+	return diff;
+}
+
+function getDiff(
+	vNode: VirtualNode,
+	nextVNode: VirtualNode,
+	prevDiff: Array<Diff> = [],
+	isRemovingNodeByKey = false
+) {
+	if (!vNode && !nextVNode) {
+		return prevDiff;
+	}
+
 	let diff = [...prevDiff];
-	const route = [...prevRoute];
-	const key = getNodeKey(VDOM);
-	const nextKey = getNodeKey(nextVDOM);
+	const key = getNodeKey(vNode);
+	const nextKey = getNodeKey(nextVNode);
 
-	route[level] = idx;
-
-	if (!VDOM && !nextVDOM) {
+	if (!vNode) {
+		diff.push(createDiffAction(ADD_NODE, nextVNode.nodeRoute, null, nextVNode));
 		return diff;
 	}
 
-	if (!VDOM) {
-		diff.push(createDiffAction(ADD_NODE, route, null, nextVDOM));
+	if (!nextVNode || isRemovingNodeByKey) {
+		diff.push(createDiffAction(REMOVE_NODE, vNode.nodeRoute, vNode, null));
 		return diff;
-	} else if (
-		!nextVDOM ||
-		(!isEmpty(key) && !isEmpty(nextKey) && key !== nextKey)
+	}
+
+	if (
+		key !== nextKey ||
+		vNode.type !== nextVNode.type ||
+		vNode.name !== nextVNode.name ||
+		vNode.text !== nextVNode.text
 	) {
-		diff.push(createDiffAction(REMOVE_NODE, route, VDOM, null));
+		diff.push(
+			createDiffAction(REPLACE_NODE, nextVNode.nodeRoute, vNode, nextVNode)
+		);
 		return diff;
-	} else if (
-		VDOM.type !== nextVDOM.type ||
-		VDOM.name !== nextVDOM.name ||
-		VDOM.text !== nextVDOM.text ||
-		key !== nextKey
-	) {
-		diff.push(createDiffAction(REPLACE_NODE, route, VDOM, nextVDOM));
-		return diff;
-	} else {
-		if (VDOM.attrs && nextVDOM.attrs) {
-			const mapOldAttr = (attrName: string) => {
-				if (attrName === ATTR_KEY) {
-					return;
-				}
+	}
 
-				if (isEmpty(nextVDOM.attrs[attrName])) {
-					diff.push(
-						createDiffAction(
-							REMOVE_ATTRIBUTE,
-							route,
-							createAttribute(attrName, VDOM.attrs[attrName]),
-							null
-						)
-					);
-				} else if (
-					nextVDOM.attrs[attrName] !== VDOM.attrs[attrName] &&
-					!isFunction(nextVDOM.attrs[attrName])
-				) {
-					diff.push(
-						createDiffAction(
-							REPLACE_ATTRIBUTE,
-							route,
-							createAttribute(attrName, VDOM.attrs[attrName]),
-							createAttribute(attrName, nextVDOM.attrs[attrName])
-						)
-					);
-				}
-			};
+	if (isTagVirtualNode(vNode)) {
+		const prevAttrs = Object.keys(vNode.attrs);
+		const newAttrs = Object.keys(nextVNode.attrs);
 
-			const mapNewAttr = (attrName: string) => {
-				if (attrName === ATTR_KEY) {
-					return;
-				}
-
-				if (
-					isEmpty(VDOM.attrs[attrName]) &&
-					!isFunction(nextVDOM.attrs[attrName])
-				) {
-					diff.push(
-						createDiffAction(
-							ADD_ATTRIBUTE,
-							route,
-							null,
-							createAttribute(attrName, nextVDOM.attrs[attrName])
-						)
-					);
-				}
-			};
-
-			Object.keys(VDOM.attrs).forEach(mapOldAttr);
-			Object.keys(nextVDOM.attrs).forEach(mapNewAttr);
+		for (const attrName of prevAttrs) {
+			mapPrevAttributes(attrName, vNode, nextVNode, diff);
 		}
 
-		level++;
-
-		const iterateVDOM = (vNode: VirtualNode, nextVNode: VirtualNode) => {
-			const iterations = Math.max(
-				vNode.children.length,
-				nextVNode.children.length
-			);
-
-			for (let i = 0; i < iterations; i++) {
-				const childVNode = VDOM.children[i];
-				const childNextVNode = nextVDOM.children[i];
-				const key = getNodeKey(childVNode);
-				const nextKey = getNodeKey(childNextVNode);
-
-				if (childVNode && childVNode.processed) {
-					continue;
-				}
-
-				diff = [
-					...getVirtualDOMDiff(
-						childVNode,
-						childNextVNode,
-						diff,
-						route,
-						level,
-						i
-					),
-				];
-
-				if (!isEmpty(key) && !isEmpty(nextKey) && key !== nextKey) {
-					VDOM.children.splice(i, 1);
-					iterateVDOM(VDOM, nextVDOM);
-
-					break;
-				}
-			}
-		};
-
-		iterateVDOM(VDOM, nextVDOM);
+		for (const attrName of newAttrs) {
+			mapNewAttributes(attrName, vNode, nextVNode, diff);
+		}
 	}
+
+	diff = iterateNodes(vNode, nextVNode, diff);
 
 	return diff;
 }
@@ -178,5 +191,5 @@ export {
 	ADD_ATTRIBUTE,
 	REMOVE_ATTRIBUTE,
 	REPLACE_ATTRIBUTE,
-	getVirtualDOMDiff,
+	getDiff,
 };

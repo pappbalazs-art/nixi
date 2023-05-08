@@ -6,8 +6,8 @@ import {
 	REMOVE_ATTRIBUTE,
 	REPLACE_ATTRIBUTE,
 	VirtualNode,
-	VirtualDOMDiff,
-	getVirtualDOMDiff,
+	Diff,
+	getDiff,
 	isTagVirtualNode,
 	getAttribute,
 } from "@core/vdom";
@@ -142,10 +142,7 @@ function getDOMElementRoute(
 	return [route, stop];
 }
 
-function getNodeByDiffElememt(
-	parentNode: HTMLElement,
-	diffElement: VirtualDOMDiff
-) {
+function getNodeByDiffElememt(parentNode: HTMLElement, diffElement: Diff) {
 	let node = parentNode;
 	const { action, route, oldValue, nextValue } = diffElement;
 	const isRoot = route.length === 1;
@@ -197,8 +194,8 @@ function getDOMElementByRoute(
 	return node;
 }
 
-function patchDOM(diff: VirtualDOMDiff[], rootElement: HTMLElement) {
-	const mapDiff = (diffElement: VirtualDOMDiff) => {
+function patchDOM(diff: Diff[], rootElement: HTMLElement) {
+	const mapDiff = (diffElement: Diff) => {
 		const node = getNodeByDiffElememt(rootElement, diffElement);
 
 		if (diffElement.action === ADD_NODE) {
@@ -264,7 +261,7 @@ function processDOM({
 	const mapFn = (fn) => fn();
 	let diff = [];
 
-	diff = getVirtualDOMDiff(vNode, nextVNode);
+	diff = getDiff(vNode, nextVNode);
 
 	patchDOM(diff, DOMElement);
 

@@ -7,7 +7,6 @@ export type VirtualNodeType = "TAG" | "TEXT" | "COMMENT";
 export type VirtualNode = {
 	isVirtualNode: boolean;
 	type: VirtualNodeType;
-	id: string;
 	name?: string;
 	isVoid?: boolean;
 	attrs?: Record<string, string>;
@@ -15,7 +14,6 @@ export type VirtualNode = {
 	children: Array<VirtualNode>;
 	nodeRoute: Array<number>;
 	componentRoute: Array<number>;
-	processed: boolean;
 };
 
 export type VirtualDOM = VirtualNode | Array<VirtualNode>;
@@ -39,7 +37,6 @@ function createVirtualNode(
 ) {
 	return {
 		isVirtualNode: true,
-		id: "",
 		name: null,
 		isVoid: false,
 		attrs: {},
@@ -47,7 +44,6 @@ function createVirtualNode(
 		children: [],
 		nodeRoute: [],
 		componentRoute: [],
-		processed: false,
 		...config,
 		type,
 	};
