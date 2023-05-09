@@ -12,7 +12,7 @@ const config = (env) => ({
 	},
 	resolve: {
 		modules: ["node_modules"],
-		extensions: [".js", ".ts"],
+		extensions: [".js", ".ts", ".tsx"],
 		alias,
 	},
 	entry: path.resolve(__dirname, "./src/index.ts"),
@@ -28,7 +28,7 @@ const config = (env) => ({
 	module: {
 		rules: [
 			{
-				test: /\.ts$/,
+				test: /\.(ts|tsx)$/,
 				loader: "ts-loader",
 				options: {
 					transpileOnly: true,
