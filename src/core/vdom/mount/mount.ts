@@ -81,7 +81,6 @@ function flatVirtualDOM(
 		if (isVirtualNode(vNode)) {
 			vNode.nodeRoute = [...mountedNodeRoute];
 			vNode.componentRoute = [...mountedComponentRoute];
-			vNode.id = "";
 		}
 
 		let shift = 0;

@@ -1,12 +1,13 @@
 import {
 	ADD_NODE,
+	INSERT_NODE,
 	REMOVE_NODE,
 	REPLACE_NODE,
 	ADD_ATTRIBUTE,
 	REMOVE_ATTRIBUTE,
 	REPLACE_ATTRIBUTE,
 	VirtualNode,
-	Diff,
+	Commit,
 	getDiff,
 	isTagVirtualNode,
 	getAttribute,
@@ -14,6 +15,7 @@ import {
 import { isArray, isFunction, isUndefined } from "@helpers";
 import { getAppUID, getRegistery } from "@core/scope";
 import { delegateEvent } from "../events/events";
+import { ATTR_KEY } from "@core/constants";
 
 type ProcessDOMOptions = {
 	vNode: VirtualNode;
@@ -29,6 +31,7 @@ function mountDOM(
 	let container: HTMLElement | Text | Comment | null = parentNode || null;
 	const uid = getAppUID();
 	const app = getRegistery().get(uid);
+	const attrValueBlackList = [ATTR_KEY];
 	const mapVDOM = (vNode: VirtualNode) => {
 		if (!vNode) {
 			return;
@@ -41,6 +44,7 @@ function mountDOM(
 			const DOMElement = document.createElement(vNode.name);
 			const mapAttrs = (attrName: string) => {
 				!isFunction(getAttribute(vNode, attrName)) &&
+					!attrValueBlackList.includes(attrName) &&
 					DOMElement.setAttribute(attrName, vNode.attrs[attrName]);
 
 				if (/^on/.test(attrName)) {
@@ -142,9 +146,9 @@ function getDOMElementRoute(
 	return [route, stop];
 }
 
-function getNodeByDiffElememt(parentNode: HTMLElement, diffElement: Diff) {
+function getNodeByCommit(parentNode: HTMLElement, commit: Commit) {
 	let node = parentNode;
-	const { action, route, oldValue, nextValue } = diffElement;
+	const { action, route, oldValue, nextValue } = commit;
 	const isRoot = route.length === 1;
 
 	if (isRoot) {
@@ -194,59 +198,65 @@ function getDOMElementByRoute(
 	return node;
 }
 
-function patchDOM(diff: Diff[], rootElement: HTMLElement) {
-	const mapDiff = (diffElement: Diff) => {
-		const node = getNodeByDiffElememt(rootElement, diffElement);
+const patchAttributes = (name: string, value: any, node: HTMLElement) => {
+	!isFunction(value) && !isUndefined(value) && node.setAttribute(name, value);
 
-		if (diffElement.action === ADD_NODE) {
-			const newNode = mountDOM(
-				diffElement.nextValue as VirtualNode,
-				rootElement
-			);
-			node.appendChild(newNode);
-		} else if (diffElement.action === REMOVE_NODE) {
-			node.parentNode.removeChild(node);
-		} else if (diffElement.action === REPLACE_NODE) {
-			const newNode = mountDOM(
-				diffElement.nextValue as VirtualNode,
-				rootElement
-			);
-			node.replaceWith(newNode);
-		} else if (diffElement.action === ADD_ATTRIBUTE) {
-			const attrValueBlackList = [];
-			const mapAttrs = (attrName: string) =>
-				!attrValueBlackList.includes(diffElement.nextValue[attrName]) &&
-				node.setAttribute(attrName, diffElement.nextValue[attrName]);
+	if (node.nodeName.toLowerCase() === "input") {
+		const input = node as HTMLInputElement;
+		const inputType = input.type.toLowerCase();
 
-			Object.keys(diffElement.nextValue).forEach(mapAttrs);
-		} else if (diffElement.action === REMOVE_ATTRIBUTE) {
-			const mapAttrs = (attrName: string) => node.removeAttribute(attrName);
-			Object.keys(diffElement.oldValue).forEach(mapAttrs);
-		} else if (diffElement.action === REPLACE_ATTRIBUTE) {
-			const mapAttrs = (attrName: string) => {
-				const value = diffElement.nextValue[attrName];
-
-				!isFunction(value) &&
-					!isUndefined(value) &&
-					node.setAttribute(attrName, value);
-
-				if (node.nodeName.toLowerCase() === "input") {
-					const input = node as HTMLInputElement;
-					const inputType = input.type.toLowerCase();
-
-					if (inputType === "text" && attrName === "value") {
-						input.value = value;
-					} else if (inputType === "checkbox" && attrName === "checked") {
-						input.checked = value;
-					}
-				}
-			};
-
-			Object.keys(diffElement.nextValue).forEach(mapAttrs);
+		if (inputType === "text" && name === "value") {
+			input.value = value;
+		} else if (inputType === "checkbox" && name === "checked") {
+			input.checked = value;
 		}
-	};
+	}
+};
 
-	diff.forEach(mapDiff);
+const applyCommit = (commit: Commit, root: HTMLElement) => {
+	const { action, nextValue, oldValue } = commit;
+	const node = getNodeByCommit(root, commit);
+	const nextVNode = nextValue as VirtualNode;
+
+	if (action === ADD_NODE) {
+		const mountedNode = mountDOM(nextVNode, root);
+		node.appendChild(mountedNode);
+	} else if (action === REMOVE_NODE) {
+		node.parentNode.removeChild(node);
+	} else if (action === REPLACE_NODE) {
+		const mountedNode = mountDOM(nextVNode, root);
+		node.replaceWith(mountedNode);
+	} else if (action === INSERT_NODE) {
+		const mountedNode = mountDOM(nextVNode, root);
+		node.parentNode.insertBefore(mountedNode, node);
+	} else if (action === ADD_ATTRIBUTE) {
+		const attrValueBlackList = [ATTR_KEY];
+		const filterAttrNamesFn = (name: string) =>
+			!attrValueBlackList.includes(name);
+		const attrNames = Object.keys(nextValue).filter(filterAttrNamesFn);
+
+		for (const attrName of attrNames) {
+			node.setAttribute(attrName, nextValue[attrName]);
+		}
+	} else if (action === REMOVE_ATTRIBUTE) {
+		const attrNames = Object.keys(oldValue);
+
+		for (const attrName of attrNames) {
+			node.removeAttribute(attrName);
+		}
+	} else if (action === REPLACE_ATTRIBUTE) {
+		const attrNames = Object.keys(nextValue);
+
+		for (const attrName of attrNames) {
+			patchAttributes(attrName, nextValue[attrName], node);
+		}
+	}
+};
+
+function patchDOM(commits: Commit[], root: HTMLElement) {
+	for (const commit of commits) {
+		applyCommit(commit, root);
+	}
 }
 
 function processDOM({
@@ -259,11 +269,11 @@ function processDOM({
 	const getDOMElement = () => container || app.nativeElement;
 	const DOMElement = getDOMElement();
 	const mapFn = (fn) => fn();
-	let diff = [];
+	let commits = [];
 
-	diff = getDiff(vNode, nextVNode);
+	commits = getDiff(vNode, nextVNode);
 
-	patchDOM(diff, DOMElement);
+	patchDOM(commits, DOMElement);
 
 	app.queue.forEach(mapFn);
 	app.queue = [];

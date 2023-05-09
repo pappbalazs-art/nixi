@@ -8,6 +8,7 @@ import {
 } from "../vnode";
 
 const ADD_NODE = "ADD_NODE";
+const INSERT_NODE = "INSERT_NODE";
 const REMOVE_NODE = "REMOVE_NODE";
 const REPLACE_NODE = "REPLACE_NODE";
 const ADD_ATTRIBUTE = "ADD_ATTRIBUTE";
@@ -16,25 +17,26 @@ const REPLACE_ATTRIBUTE = "REPLACE_ATTRIBUTE";
 
 export type VirtualDOMActions =
 	| "ADD_NODE"
+	| "INSERT_NODE"
 	| "REMOVE_NODE"
 	| "REPLACE_NODE"
 	| "ADD_ATTRIBUTE"
 	| "REMOVE_ATTRIBUTE"
 	| "REPLACE_ATTRIBUTE";
 
-export type Diff = {
+export type Commit = {
 	action: VirtualDOMActions;
 	route: Array<number>;
 	oldValue: VirtualNode | Record<string, number | string | boolean>;
 	nextValue: VirtualNode | Record<string, number | string | boolean>;
 };
 
-const createDiffAction = (
+const createCommit = (
 	action: VirtualDOMActions,
 	route: Array<number> = [],
 	oldValue: any,
 	nextValue: any
-): Diff => ({
+): Commit => ({
 	action,
 	route,
 	oldValue,
@@ -45,15 +47,15 @@ function mapPrevAttributes(
 	attrName: string,
 	vNode: VirtualNode,
 	nextVNode: VirtualNode,
-	diff: Array<Diff>
+	commits: Array<Commit>
 ) {
 	if (attrName === ATTR_KEY) {
 		return;
 	}
 
 	if (isEmpty(nextVNode.attrs[attrName])) {
-		diff.push(
-			createDiffAction(
+		commits.push(
+			createCommit(
 				REMOVE_ATTRIBUTE,
 				nextVNode.nodeRoute,
 				createAttribute(attrName, vNode.attrs[attrName]),
@@ -64,8 +66,8 @@ function mapPrevAttributes(
 		nextVNode.attrs[attrName] !== vNode.attrs[attrName] &&
 		!isFunction(nextVNode.attrs[attrName])
 	) {
-		diff.push(
-			createDiffAction(
+		commits.push(
+			createCommit(
 				REPLACE_ATTRIBUTE,
 				nextVNode.nodeRoute,
 				createAttribute(attrName, vNode.attrs[attrName]),
@@ -79,7 +81,7 @@ function mapNewAttributes(
 	attrName: string,
 	vNode: VirtualNode,
 	nextVNode: VirtualNode,
-	diff: Array<Diff>
+	commits: Array<Commit>
 ) {
 	if (attrName === ATTR_KEY) {
 		return;
@@ -89,8 +91,8 @@ function mapNewAttributes(
 		isEmpty(vNode.attrs[attrName]) &&
 		!isFunction(nextVNode.attrs[attrName])
 	) {
-		diff.push(
-			createDiffAction(
+		commits.push(
+			createCommit(
 				ADD_ATTRIBUTE,
 				nextVNode.nodeRoute,
 				null,
@@ -103,55 +105,92 @@ function mapNewAttributes(
 function iterateNodes(
 	vNode: VirtualNode,
 	nextVNode: VirtualNode,
-	diff: Array<Diff>
+	commits: Array<Commit>
 ) {
 	const iterations = Math.max(vNode.children.length, nextVNode.children.length);
-	const diffCount = vNode.children.length - nextVNode.children.length;
-	let shift = 0;
+	const removingSize = vNode.children.length - nextVNode.children.length;
+	const insertingSize = nextVNode.children.length - vNode.children.length;
+
+	let vNodeShift = 0;
+	let nextVNodeShift = 0;
+	let sameRemoveCommitsSize = commits.length;
 
 	for (let i = 0; i < iterations; i++) {
-		const childVNode = vNode.children[i];
-		const childNextVNode = nextVNode.children[i - shift];
+		const childVNode = vNode.children[i - vNodeShift];
+		const childNextVNode = nextVNode.children[i - nextVNodeShift];
 		const key = getNodeKey(childVNode);
 		const nextKey = getNodeKey(childNextVNode);
+		const isDifferentKeys =
+			!isEmpty(key) && !isEmpty(nextKey) && key !== nextKey;
 		const isRemovingNodeByKey =
-			shift < diffCount &&
-			!isEmpty(key) &&
-			!isEmpty(nextKey) &&
-			key !== nextKey;
+			nextVNodeShift < removingSize && isDifferentKeys;
+		const isInsertingNodeByKey = vNodeShift < insertingSize && isDifferentKeys;
+		const prevCommit = commits[commits.length - 1];
 
-		diff = getDiff(childVNode, childNextVNode, diff, isRemovingNodeByKey);
+		commits = getDiff(
+			childVNode,
+			childNextVNode,
+			commits,
+			isRemovingNodeByKey,
+			isInsertingNodeByKey
+		);
+
+		if (
+			prevCommit &&
+			prevCommit.action === REMOVE_NODE &&
+			sameRemoveCommitsSize !== commits.length
+		) {
+			const commit = commits[commits.length - 1];
+
+			if (commit && commit.action === REMOVE_NODE) {
+				const last = prevCommit.route[prevCommit.route.length - 1];
+				commit.route = [...commit.route.slice(0, -1), last];
+				sameRemoveCommitsSize = commits.length;
+			}
+		}
 
 		if (isRemovingNodeByKey) {
-			shift++;
+			nextVNodeShift++;
+		}
+
+		if (isInsertingNodeByKey) {
+			vNodeShift++;
 		}
 	}
 
-	return diff;
+	return commits;
 }
 
 function getDiff(
 	vNode: VirtualNode,
 	nextVNode: VirtualNode,
-	prevDiff: Array<Diff> = [],
-	isRemovingNodeByKey = false
+	prevCommits: Array<Commit> = [],
+	isRemovingNodeByKey = false,
+	isInsertingNodeByKey = false
 ) {
 	if (!vNode && !nextVNode) {
-		return prevDiff;
+		return prevCommits;
 	}
 
-	let diff = [...prevDiff];
+	let commits = [...prevCommits];
 	const key = getNodeKey(vNode);
 	const nextKey = getNodeKey(nextVNode);
 
 	if (!vNode) {
-		diff.push(createDiffAction(ADD_NODE, nextVNode.nodeRoute, null, nextVNode));
-		return diff;
+		commits.push(createCommit(ADD_NODE, nextVNode.nodeRoute, null, nextVNode));
+		return commits;
 	}
 
 	if (!nextVNode || isRemovingNodeByKey) {
-		diff.push(createDiffAction(REMOVE_NODE, vNode.nodeRoute, vNode, null));
-		return diff;
+		commits.push(createCommit(REMOVE_NODE, vNode.nodeRoute, vNode, null));
+		return commits;
+	}
+
+	if (Boolean(vNode && nextVNode && isInsertingNodeByKey)) {
+		commits.push(
+			createCommit(INSERT_NODE, nextVNode.nodeRoute, vNode, nextVNode)
+		);
+		return commits;
 	}
 
 	if (
@@ -160,10 +199,10 @@ function getDiff(
 		vNode.name !== nextVNode.name ||
 		vNode.text !== nextVNode.text
 	) {
-		diff.push(
-			createDiffAction(REPLACE_NODE, nextVNode.nodeRoute, vNode, nextVNode)
+		commits.push(
+			createCommit(REPLACE_NODE, nextVNode.nodeRoute, vNode, nextVNode)
 		);
-		return diff;
+		return commits;
 	}
 
 	if (isTagVirtualNode(vNode)) {
@@ -171,21 +210,22 @@ function getDiff(
 		const newAttrs = Object.keys(nextVNode.attrs);
 
 		for (const attrName of prevAttrs) {
-			mapPrevAttributes(attrName, vNode, nextVNode, diff);
+			mapPrevAttributes(attrName, vNode, nextVNode, commits);
 		}
 
 		for (const attrName of newAttrs) {
-			mapNewAttributes(attrName, vNode, nextVNode, diff);
+			mapNewAttributes(attrName, vNode, nextVNode, commits);
 		}
 	}
 
-	diff = iterateNodes(vNode, nextVNode, diff);
+	commits = iterateNodes(vNode, nextVNode, commits);
 
-	return diff;
+	return commits;
 }
 
 export {
 	ADD_NODE,
+	INSERT_NODE,
 	REMOVE_NODE,
 	REPLACE_NODE,
 	ADD_ATTRIBUTE,
