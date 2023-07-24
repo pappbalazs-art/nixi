@@ -6,3 +6,6 @@ node_modules/
 
 # Do not inckude compiled files
 lib/
+
+# Do not include vs-code files
+.vscode/
