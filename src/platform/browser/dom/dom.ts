@@ -41,18 +41,18 @@ function mountDOM(
 			Boolean(container) && container.nodeType === Node.ELEMENT_NODE;
 
 		if (vNode.type === "TAG") {
-			const DOMElement = document.createElement(vNode.name);
+			const domElement = document.createElement(vNode.name);
 			const mapAttrs = (attrName: string) => {
 				!isFunction(getAttribute(vNode, attrName)) &&
 					!attrValueBlackList.includes(attrName) &&
-					DOMElement.setAttribute(attrName, vNode.attrs[attrName]);
+					domElement.setAttribute(attrName, vNode.attrs[attrName]);
 
 				if (/^on/.test(attrName)) {
 					const eventName = attrName.slice(2, attrName.length).toLowerCase();
 					const handler = getAttribute(vNode, attrName);
 
 					app.queue.push(() =>
-						delegateEvent(uid, rootNode, DOMElement, eventName, handler)
+						delegateEvent(uid, rootNode, domElement, eventName, handler)
 					);
 				}
 			};
@@ -60,13 +60,13 @@ function mountDOM(
 			Object.keys(vNode.attrs).forEach(mapAttrs);
 
 			if (isContainerExists) {
-				container.appendChild(DOMElement);
+				container.appendChild(domElement);
 
 				if (!vNode.isVoid) {
 					const node = mountDOM(
 						vNode.children,
 						rootNode,
-						DOMElement
+						domElement
 					) as HTMLElement;
 					container.appendChild(node);
 				}
@@ -74,7 +74,7 @@ function mountDOM(
 				const node = mountDOM(
 					vNode.children,
 					rootNode,
-					DOMElement
+					domElement
 				) as HTMLElement;
 				container = node;
 			}
@@ -107,31 +107,31 @@ function mountDOM(
 	return container;
 }
 
-function getDOMElementRoute(
-	sourceDOMElement: HTMLElement,
-	targetDOMElement: HTMLElement,
+function getDomElementRoute(
+	sourceDomElement: HTMLElement,
+	targetDomElement: HTMLElement,
 	prevRoute: number[] = [],
 	level: number = 0,
 	idx: number = 0,
 	stop: boolean = false
 ): [number[], boolean] {
-	const children = Array.from(sourceDOMElement.childNodes);
+	const children = Array.from(sourceDomElement.childNodes);
 	let route = [...prevRoute];
 
 	route[level] = idx;
 	level++;
 
-	if (targetDOMElement === sourceDOMElement) {
+	if (targetDomElement === sourceDomElement) {
 		route = route.slice(0, level);
 
 		return [route, true];
 	}
 
 	for (let i = 0; i < children.length; i++) {
-		const childSourceDOMElement = sourceDOMElement.childNodes[i] as HTMLElement;
-		const [nextRoute, nextStop] = getDOMElementRoute(
+		const childSourceDOMElement = sourceDomElement.childNodes[i] as HTMLElement;
+		const [nextRoute, nextStop] = getDomElementRoute(
 			childSourceDOMElement,
-			targetDOMElement,
+			targetDomElement,
 			route,
 			level,
 			i,
@@ -183,7 +183,7 @@ function getNodeByCommit(parentNode: HTMLElement, commit: Commit) {
 	return node;
 }
 
-function getDOMElementByRoute(
+function getDomElementByRoute(
 	parentNode: HTMLElement,
 	route: number[] = []
 ): HTMLElement {
@@ -284,8 +284,8 @@ function processDOM({
 
 export {
 	mountDOM,
-	getDOMElementRoute,
-	getDOMElementByRoute,
+	getDomElementRoute,
+	getDomElementByRoute,
 	patchDOM,
 	processDOM,
 };
