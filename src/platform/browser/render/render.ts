@@ -8,7 +8,7 @@ import {
 } from "@core/scope";
 import { mountVirtualDOM, VirtualNode } from "@core/vdom";
 import { isUndefined } from "@helpers";
-import { mountDOM, processDOM } from "../dom";
+import { mountRealDOM, processDOM } from "../dom";
 
 const zoneIdByRootNodeMap = new WeakMap();
 let renderInProccess = false;
@@ -47,18 +47,20 @@ function renderComponent(
 		container.innerHTML = "";
 		registery.set(zoneId, app);
 
-		vNode = mountVirtualDOM({ element: source, fromRoot: true }) as VirtualNode;
+		vNode = mountVirtualDOM({
+			element: source,
+			fromRoot: true,
+		}) as VirtualNode;
 
 		app.vdom = vNode;
 
-		Array.from(mountDOM(vNode, app.nativeElement).childNodes).forEach((node) =>
-			container.appendChild(node)
+		const nodes = Array.from(
+			mountRealDOM(vNode, app.nativeElement).childNodes
 		);
 
-		console.log("vNode: ", vNode);
-
-		app.queue.forEach((fn) => fn());
-		app.queue = [];
+		for (const node of nodes) {
+			container.appendChild(node);
+		}
 	} else {
 		const vNode = getVirtualDOM(zoneId);
 		let nextVNode: VirtualNode = null;

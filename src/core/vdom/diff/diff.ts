@@ -1,7 +1,8 @@
 import { isEmpty, isFunction } from "@helpers";
-import { ATTR_KEY } from "@core/constants";
+import { ATTR_KEY, ATTR_SKIP } from "@core/constants";
 import {
 	createAttribute,
+	getAttribute,
 	getNodeKey,
 	isTagVirtualNode,
 	VirtualNode,
@@ -107,7 +108,10 @@ function iterateNodes(
 	nextVNode: VirtualNode,
 	commits: Array<Commit>
 ) {
-	const iterations = Math.max(vNode.children.length, nextVNode.children.length);
+	const iterations = Math.max(
+		vNode.children.length,
+		nextVNode.children.length
+	);
 	const removingSize = vNode.children.length - nextVNode.children.length;
 	const insertingSize = nextVNode.children.length - vNode.children.length;
 
@@ -124,7 +128,8 @@ function iterateNodes(
 			!isEmpty(key) && !isEmpty(nextKey) && key !== nextKey;
 		const isRemovingNodeByKey =
 			nextVNodeShift < removingSize && isDifferentKeys;
-		const isInsertingNodeByKey = vNodeShift < insertingSize && isDifferentKeys;
+		const isInsertingNodeByKey =
+			vNodeShift < insertingSize && isDifferentKeys;
 		const prevCommit = commits[commits.length - 1];
 
 		commits = getDiff(
@@ -177,7 +182,9 @@ function getDiff(
 	const nextKey = getNodeKey(nextVNode);
 
 	if (!vNode) {
-		commits.push(createCommit(ADD_NODE, nextVNode.nodeRoute, null, nextVNode));
+		commits.push(
+			createCommit(ADD_NODE, nextVNode.nodeRoute, null, nextVNode)
+		);
 		return commits;
 	}
 
@@ -218,7 +225,9 @@ function getDiff(
 		}
 	}
 
-	commits = iterateNodes(vNode, nextVNode, commits);
+	if (!getAttribute(nextVNode, ATTR_SKIP)) {
+		commits = iterateNodes(vNode, nextVNode, commits);
+	}
 
 	return commits;
 }
