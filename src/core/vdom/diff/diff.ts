@@ -149,7 +149,7 @@ function iterateNodes(
 
 			if (commit && commit.action === REMOVE_NODE) {
 				const last = prevCommit.route[prevCommit.route.length - 1];
-				commit.route = [...commit.route.slice(0, -1), last];
+				commit.route[commit.route.length - 1] = last;
 				sameRemoveCommitsSize = commits.length;
 			}
 		}
@@ -169,15 +169,14 @@ function iterateNodes(
 function getDiff(
 	vNode: VirtualNode,
 	nextVNode: VirtualNode,
-	prevCommits: Array<Commit> = [],
+	commits: Array<Commit> = [],
 	isRemovingNodeByKey = false,
 	isInsertingNodeByKey = false
 ) {
 	if (!vNode && !nextVNode) {
-		return prevCommits;
+		return commits;
 	}
 
-	let commits = [...prevCommits];
 	const key = getNodeKey(vNode);
 	const nextKey = getNodeKey(nextVNode);
 

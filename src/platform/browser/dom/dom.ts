@@ -290,6 +290,8 @@ function processDOM({
 
 	commits = getDiff(vNode, nextVNode);
 
+	console.log("commits:", commits);
+
 	patchDOM(commits, DOMElement);
 
 	app.vdom = nextVNode;
