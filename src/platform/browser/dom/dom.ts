@@ -160,9 +160,9 @@ function getDomElementRoute(
 }
 
 function getNodeByCommit(parentNode: HTMLElement, commit: Commit) {
-	let node = parentNode;
 	const { action, route, oldValue, nextValue } = commit;
 	const isRoot = route.length === 1;
+	let node = parentNode;
 
 	if (isRoot) {
 		const isVNodeTag = isTagVirtualNode(oldValue as VirtualNode);
@@ -178,19 +178,19 @@ function getNodeByCommit(parentNode: HTMLElement, commit: Commit) {
 		return node;
 	}
 
-	const mapRoute = (routeID: number, idx: number, arr: number[]) => {
+	const mapRoute = (routeId: number, idx: number, arr: number[]) => {
 		if (idx > 0) {
 			if (action === ADD_NODE && idx === arr.length - 1) {
 				return;
 			}
 
 			if (action === REMOVE_NODE) {
-				node = (node.childNodes[routeID] ||
+				node = (node.childNodes[routeId] ||
 					node.childNodes[node.childNodes.length - 1]) as HTMLElement;
 				return;
 			}
 
-			node = node.childNodes[routeID] as HTMLElement;
+			node = node.childNodes[routeId] as HTMLElement;
 		}
 	};
 

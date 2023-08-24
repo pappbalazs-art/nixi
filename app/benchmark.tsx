@@ -17,6 +17,7 @@ const buildData = (count, prefix = "") => {
 		.map((_, idx) => ({
 			id: ++nextId,
 			name: `item ${idx + 1} ${prefix}`,
+			select: false,
 		}));
 };
 
@@ -60,17 +61,20 @@ const Header = createComponent<HeaderProps>(
 );
 
 type ListProps = {
-	items: Array<{ id: number; name: string }>;
+	items: Array<{ id: number; name: string; select: boolean }>;
 	onRemove: Function;
+	onHighlight: Function;
 };
 
-const List = createComponent<ListProps>(({ items, onRemove }) => {
-	const cellStyle = "border: 1px solid pink";
-
+const List = createComponent<ListProps>(({ items, onRemove, onHighlight }) => {
 	return table({
 		style: "width: 100%; border-collapse: collapse",
 		slot: tbody({
 			slot: items.map((x) => {
+				const cellStyle = `border: 1px solid pink; ${
+					x.select ? "background-color: green;" : ""
+				}`;
+
 				return tr({
 					key: x.id,
 					slot: [
@@ -79,10 +83,16 @@ const List = createComponent<ListProps>(({ items, onRemove }) => {
 						td({ style: cellStyle, slot: Text("2") }),
 						td({
 							style: cellStyle,
-							slot: button({
-								slot: Text("remove"),
-								onClick: () => onRemove(x),
-							}),
+							slot: [
+								button({
+									slot: Text("remove"),
+									onClick: () => onRemove(x),
+								}),
+								button({
+									slot: Text("highlight"),
+									onClick: () => onHighlight(x),
+								}),
+							],
 						}),
 					],
 				});
@@ -114,6 +124,15 @@ const App = createComponent(() => {
 
 		forceUpdate();
 	};
+	const handleHighlight = (x) => {
+		console.time("highlight");
+
+		const idx = state.list.findIndex((z) => z.id === x.id);
+		state.list[idx].select = !state.list[idx].select;
+		forceUpdate();
+
+		console.timeEnd("highlight");
+	};
 	const handleSwap = () => {
 		console.time("swap");
 
@@ -142,7 +161,11 @@ const App = createComponent(() => {
 				onSwap: handleSwap,
 				onClear: handleClear,
 			}),
-			List({ items: state.list, onRemove: handleRemove }),
+			List({
+				items: state.list,
+				onRemove: handleRemove,
+				onHighlight: handleHighlight,
+			}),
 		],
 	});
 });
